@@ -10,8 +10,14 @@ groups:
       - record: maas:auth_deny_ratio:rate5m
         expr: |
           (
-            sum by (authconfig, namespace) (
-              rate(auth_server_authconfig_response_status{namespace=~"rh-connectivity-link|kuadrant-system",status!="OK"}[5m])
+            (
+              sum by (authconfig, namespace) (
+                rate(auth_server_authconfig_response_status{namespace=~"rh-connectivity-link|kuadrant-system",status!="OK"}[5m])
+              )
+              or
+              0 * group by (authconfig, namespace) (
+                auth_server_authconfig_response_status{namespace=~"rh-connectivity-link|kuadrant-system"}
+              )
             )
             /
             sum by (authconfig, namespace) (
