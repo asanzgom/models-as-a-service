@@ -84,6 +84,28 @@ Exposed on `/server-metrics` (port 8080):
 
 **Remediate:** IdP (Keycloak/OIDC provider) health; JWKS endpoint reachability; API key / token validity; consider increasing `Tenant.spec.externalOIDC.ttl` if IdP is slow but reliable. See [External OIDC Configuration](../advanced-administration/external-oidc.md).
 
+#### Auth Decision Recording Rules
+
+Pre-aggregated recording rules for dashboards and alerting. Defined in `authorino-maas-metadata-evaluator-prometheusrule.yaml` under the `maas.authorino.auth-decisions` rule group.
+
+| Recording Rule | Description |
+|---------------|-------------|
+| `maas:auth_decisions:rate5m` | 5-minute rate of auth decisions by `authconfig`, `namespace`, and `status` |
+| `maas:auth_deny_ratio:rate5m` | 5-minute deny ratio per `authconfig` (includes zero fallback for policies with no denials) |
+| `maas:auth_latency_p95:5m` | P95 auth evaluation latency per `authconfig` |
+
+| Alert | Condition | Severity |
+|-------|-----------|----------|
+| **`MaaSHighAuthDenyRate`** | >10% deny ratio sustained for 10 minutes (with minimum traffic guard >0.001 rps) | warning |
+
+**Remediate:** AuthPolicy configuration; credential validity (expired tokens, revoked API keys); Authorino logs for the specific `authconfig` hash.
+
+!!! note "`authconfig` labels are SHA-256 hashes"
+    Authorino names AuthConfigs as SHA-256 hashes of the policy name. Recording rules and alerts use these hash values directly. Map hashes to policies via `kubectl get authconfig -n <authorino-namespace>`.
+
+!!! note "Namespace filtering"
+    Recording rules filter on `namespace=~"rh-connectivity-link|kuadrant-system"` to cover both RHOAI and ODH deployments. Custom Authorino namespace deployments need to update this filter.
+
 ### vLLM Metrics
 
 Exposed on `/metrics` (port 8000). Supported backends: vLLM v0.7.x, llm-d v0.1.x, llm-d-inference-sim v0.8.2.
@@ -151,6 +173,20 @@ sum(rate(vllm:request_success_total[5m])) /
 
 # Rate limit violations per second by subscription
 sum by (subscription) (rate(limited_calls[5m]))
+```
+
+**Auth decisions:**
+
+```promql
+# Deny ratio per policy
+maas:auth_deny_ratio:rate5m
+
+# Overall deny rate across all policies
+sum(maas:auth_decisions:rate5m{status!="OK"}) /
+  sum(maas:auth_decisions:rate5m)
+
+# P95 auth latency per policy
+maas:auth_latency_p95:5m
 ```
 
 **Latency (per-subscription SLA):**
