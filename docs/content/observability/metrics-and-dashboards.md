@@ -181,8 +181,8 @@ sum by (subscription) (rate(limited_calls[5m]))
 # Deny ratio per policy (by authconfig and namespace)
 maas:auth_deny_ratio:rate5m
 
-# Overall deny rate across all policies
-sum(maas:auth_decisions:rate5m{status!="OK"}) /
+# Overall deny rate across all policies (0 when all traffic is allowed)
+(sum(maas:auth_decisions:rate5m{status!="OK"}) or vector(0)) /
   sum(maas:auth_decisions:rate5m)
 
 # P95 auth latency per policy (by authconfig and namespace)
