@@ -91,8 +91,8 @@ Pre-aggregated recording rules for dashboards and alerting. Defined in `authorin
 | Recording Rule | Description |
 |---------------|-------------|
 | `maas:auth_decisions:rate5m` | 5-minute rate of auth decisions by `authconfig`, `namespace`, and `status` |
-| `maas:auth_deny_ratio:rate5m` | 5-minute deny ratio per `authconfig` (includes zero fallback for policies with no denials) |
-| `maas:auth_latency_p95:5m` | P95 auth evaluation latency per `authconfig` |
+| `maas:auth_deny_ratio:rate5m` | 5-minute deny ratio per `authconfig` and `namespace` (includes zero fallback for policies with no denials) |
+| `maas:auth_latency_p95:5m` | P95 auth evaluation latency per `authconfig` and `namespace` |
 
 | Alert | Condition | Severity |
 |-------|-----------|----------|
@@ -178,14 +178,14 @@ sum by (subscription) (rate(limited_calls[5m]))
 **Auth decisions:**
 
 ```promql
-# Deny ratio per policy
+# Deny ratio per policy (by authconfig and namespace)
 maas:auth_deny_ratio:rate5m
 
 # Overall deny rate across all policies
 sum(maas:auth_decisions:rate5m{status!="OK"}) /
   sum(maas:auth_decisions:rate5m)
 
-# P95 auth latency per policy
+# P95 auth latency per policy (by authconfig and namespace)
 maas:auth_latency_p95:5m
 ```
 
