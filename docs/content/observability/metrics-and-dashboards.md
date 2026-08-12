@@ -103,6 +103,9 @@ Pre-aggregated recording rules for dashboards and alerting. Defined in `authorin
 !!! note "`authconfig` labels are SHA-256 hashes"
     Authorino names AuthConfigs as SHA-256 hashes of the policy name. Recording rules and alerts use these hash values directly. Map hashes to policies via `kubectl get authconfig -n <authorino-namespace>`.
 
+!!! note "Relationship to `MaaSAuthorinoAuthenticationHighFailureRate`"
+    Both alerts can fire on sustained `UNAUTHENTICATED` spikes — this is intentional. `MaaSAuthorinoAuthenticationHighFailureRate` is cluster-wide and `UNAUTHENTICATED`-only (answers "is the IdP broken?"). `MaaSHighAuthDenyRate` is per-authconfig and covers all non-OK statuses including `PERMISSION_DENIED` and `NOT_FOUND` (answers "which policy is denying traffic?"). Dual-firing gives operators both the aggregate signal and per-policy attribution.
+
 !!! note "Namespace filtering"
     Recording rules filter on `namespace=~"rh-connectivity-link|kuadrant-system"` to cover both RHOAI and ODH deployments. Custom Authorino namespace deployments need to update this filter.
 
