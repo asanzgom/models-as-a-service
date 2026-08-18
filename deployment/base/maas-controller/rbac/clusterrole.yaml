@@ -47,6 +47,12 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - pods/log
+  verbs:
+  - get
+- apiGroups:
+  - ""
+  resources:
   - serviceaccounts
   verbs:
   - create
@@ -128,15 +134,6 @@ rules:
   - get
   - list
   - patch
-  - watch
-- apiGroups:
-  - config.openshift.io
-  resources:
-  - apiservers
-  - authentications
-  verbs:
-  - get
-  - list
   - watch
 - apiGroups:
   - discovery.k8s.io
@@ -241,6 +238,15 @@ rules:
   - list
   - patch
   - watch
+- apiGroups:
+  - loki.grafana.com
+  resourceNames:
+  - logs
+  resources:
+  - application
+  verbs:
+  - create
+  - get
 - apiGroups:
   - maas.opendatahub.io
   resources:
@@ -391,6 +397,7 @@ rules:
   resources:
   - clusterrolebindings
   - clusterroles
+  - rolebindings
   verbs:
   - create
   - delete
@@ -398,13 +405,6 @@ rules:
   - list
   - patch
   - watch
-- apiGroups:
-  - rbac.authorization.k8s.io
-  resources:
-  - rolebindings
-  verbs:
-  - delete
-  - get
 - apiGroups:
   - rbac.authorization.k8s.io
   resources:
@@ -417,6 +417,14 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - security.openshift.io
+  resourceNames:
+  - nonroot-v2
+  resources:
+  - securitycontextconstraints
+  verbs:
+  - use
 - apiGroups:
   - serving.kserve.io
   resources:
