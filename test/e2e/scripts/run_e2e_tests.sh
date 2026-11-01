@@ -9,7 +9,8 @@
 #   Pass 1: parallel with pytest-xdist (-m "not serial and not serial_exclusive and
 #           not legacy_ipp", --dist=loadgroup)
 #   Pass 2a: serial_exclusive cluster-wide tests (-m "serial_exclusive …", single worker)
-#   Pass 2b: serial cluster mutators (-m "serial and not serial_exclusive …",
+#   Pass 2b: serial cluster mutators and legacy IPP suites (-m "(serial or legacy_ipp)
+#           and not serial_exclusive …",
 #            E2E_SERIAL_WORKERS lanes, default 1)
 #   Pass 3 (optional): -m nightly when MAAS_PYTEST_INCLUDE_NIGHTLY=true (e.g. EXTERNAL_OIDC deploys)
 #
@@ -309,7 +310,7 @@ _parallel_marker="${_smoke_require}not serial and not serial_exclusive and not l
 # else is safe beside another lane provided files that mutate the same shared
 # model share one xdist group (pass 2b).
 _serial_exclusive_marker="${_smoke_require}serial_exclusive and not legacy_ipp${_nightly_exclude}"
-_serial_marker="${_smoke_require}serial and not serial_exclusive and not legacy_ipp${_nightly_exclude}"
+_serial_marker="${_smoke_require}(serial or legacy_ipp) and not serial_exclusive${_nightly_exclude}"
 # The Limitador sync subset: tests that wait on a TokenRateLimitPolicy reaching
 # Enforced=True. Only they can see a stalled limiter, and because an unapplied
 # token limit still admits every request, the rest of the suite passes either way.
