@@ -59,6 +59,8 @@
 #   E2E_DIFF_BASE / PULL_BASE_SHA / BASE_SHA - PR base for the new-test diff.
 #   E2E_DIFF_UPSTREAM_URL / E2E_DIFF_TARGET_BRANCH - Upstream repo + base branch
 #                    when the checkout's origin is a fork (/group-test sets these).
+#   E2E_SERIAL_WORKERS - pytest-xdist lane count for serial pass 2b (default: 3;
+#                 pass 2a is always one worker; 1 = single-worker serial pass)
 #   E2E_MAXFAIL - failures before a pass stops (default: 0 here, i.e. never;
 #                 run_e2e_tests.sh defaults to 5 when invoked directly)
 #   TENANT_EXTERNAL_MODEL_CROSSNS_E2E - Opt in to P1 cross-namespace external
@@ -478,6 +480,12 @@ print(f"azp={authorized_party}, audience={token_audience!r}, organizations={len(
     # Full suite by default (nightly / local / unmarked callers). /group-test opts
     # into the low-churn subset via Tekton: E2E_SMOKE_ONLY=true.
     export E2E_SMOKE_ONLY="${E2E_SMOKE_ONLY:-false}"
+    # Serial pass 2b runs in lanes; pass 2a (serial_exclusive) is always one
+    # worker. Files that mutate the same shared model share an xdist group, so
+    # lanes never race each other on a model; 3 keeps the 12 pass-2b groups
+    # spread without a lane idling. Set to 1 to fall back to the single-worker
+    # serial pass.
+    export E2E_SERIAL_WORKERS="${E2E_SERIAL_WORKERS:-3}"
     # Run the whole parallel pass even when some tests fail. The cluster's
     # control plane (kuadrant-operator, maas-controller) is shared by all
     # workers and goes unhealthy in roughly one run in five; a low cap aborts
