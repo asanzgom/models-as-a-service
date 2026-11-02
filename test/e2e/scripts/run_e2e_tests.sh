@@ -9,8 +9,8 @@
 #   Pass 1: parallel with pytest-xdist (-m "not serial and not serial_exclusive and
 #           not legacy_ipp", --dist=loadgroup)
 #   Pass 2a: serial_exclusive cluster-wide tests (-m "serial_exclusive …", single worker)
-#   Pass 2b: serial cluster mutators and legacy IPP suites (-m "(serial or legacy_ipp)
-#           and not serial_exclusive …",
+#   Pass 2b: serial cluster mutators and per-tenant legacy IPP (-m "(serial and not legacy_ipp)
+#           or legacy_ipp_pass2b) and not serial_exclusive …",
 #            E2E_SERIAL_WORKERS lanes, default 1)
 #   Pass 3 (optional): -m nightly when MAAS_PYTEST_INCLUDE_NIGHTLY=true (e.g. EXTERNAL_OIDC deploys)
 #
@@ -304,13 +304,13 @@ if [[ "$smoke_only" == "true" && "$_run_only_oidc_tests" != true ]]; then
         echo "E2E smoke-only mode: restricting passes 1–2 to @pytest.mark.smoke"
     fi
 fi
-_parallel_marker="${_smoke_require}not serial and not serial_exclusive and not legacy_ipp${_nightly_exclude}"
+_parallel_marker="${_smoke_require}not serial and not serial_exclusive and not legacy_ipp and not legacy_ipp_pass2b${_nightly_exclude}"
 # Serial tests run in two passes. serial_exclusive tests scale a control plane
 # down or delete a cluster-scoped CRD, so they run alone (pass 2a). Everything
 # else is safe beside another lane provided files that mutate the same shared
 # model share one xdist group (pass 2b).
 _serial_exclusive_marker="${_smoke_require}serial_exclusive and not legacy_ipp${_nightly_exclude}"
-_serial_marker="${_smoke_require}(serial or legacy_ipp) and not serial_exclusive${_nightly_exclude}"
+_serial_marker="${_smoke_require}((serial and not legacy_ipp) or legacy_ipp_pass2b) and not serial_exclusive${_nightly_exclude}"
 # The Limitador sync subset: tests that wait on a TokenRateLimitPolicy reaching
 # Enforced=True. Only they can see a stalled limiter, and because an unapplied
 # token limit still admits every request, the rest of the suite passes either way.

@@ -291,7 +291,6 @@ def _check_external_endpoint_reachable():
 
 pytestmark = [
     pytest.mark.legacy_ipp,
-    pytest.mark.serial,
     pytest.mark.xdist_group("legacy_ipp_external_models"),
 ]
 
