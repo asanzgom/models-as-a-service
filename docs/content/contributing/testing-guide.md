@@ -76,6 +76,7 @@ Tests are organized into **xdist groups** for parallel execution. All tests in a
 | `tenant_ipp_extproc_*` | `test_praxis_extproc_restart.py`, `test_praxis_extproc_secret_rotation.py` | Praxis extproc lifecycle |
 | `tenant_auto_resolve` | `test_tenant_auto_resolve.py` | MaaSModelRef tenant auto-resolution from gateway parentRef |
 | `inference_priority` | `test_inference_priority.py` | Subscription `inferencePriority` / InferenceObjective (`serial`) |
+| `producer_telemetry` | `test_producer_telemetry_attribution.py` | Producer-scoped Limitador telemetry attribution (`serial`) |
 | `echo_io` | `test_echo_large_io.py` | Large payload echo (`serial`) |
 | `external` | `test_external_oidc.py`, `test_external_model_routing.py`, Grid governance modules | Externally gated OIDC/routing/admin tests |
 

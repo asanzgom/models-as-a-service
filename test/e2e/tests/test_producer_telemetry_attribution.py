@@ -35,7 +35,7 @@ from worker_tenant_fixtures import (
     teardown_worker_tenant,
 )
 
-pytestmark = [pytest.mark.serial]
+pytestmark = [pytest.mark.serial, pytest.mark.xdist_group("producer_telemetry")]
 
 _LABEL_RE = re.compile(r'([a-zA-Z_][a-zA-Z0-9_]*)="((?:\\.|[^"])*)"')
 
