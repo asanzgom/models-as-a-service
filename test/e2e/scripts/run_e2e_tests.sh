@@ -106,6 +106,10 @@ reject_forwarded_marker_args() {
                 echo "ERROR: forwarded pytest marker ($arg) is not allowed; run_e2e_tests.sh applies per-pass -m filters" >&2
                 exit 1
                 ;;
+            -n|--numprocesses|--numprocesses=*|--dist|--dist=*|--tx|--tx=*|--max-worker-restart|--max-worker-restart=*)
+                echo "ERROR: forwarded pytest-xdist option ($arg) is not allowed; run_e2e_tests.sh owns pass worker settings" >&2
+                exit 1
+                ;;
         esac
     done
 }
@@ -470,6 +474,10 @@ run_serial_pass() {
     local workers="${E2E_SERIAL_WORKERS:-1}"
     if ! [[ "$workers" =~ ^[1-9][0-9]*$ ]]; then
         echo "ERROR: E2E_SERIAL_WORKERS must be a positive integer (>= 1), got '$workers'" >&2
+        exit 1
+    fi
+    if [[ "$workers" -ne 1 ]]; then
+        echo "ERROR: E2E_SERIAL_WORKERS must remain 1 until shared-model isolation is complete, got '$workers'" >&2
         exit 1
     fi
     # Serial tests keep one xdist group per file, so lanes only ever split

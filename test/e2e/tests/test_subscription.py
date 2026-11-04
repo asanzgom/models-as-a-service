@@ -53,6 +53,7 @@ import uuid
 import pytest
 import requests
 import test_helper
+from multitenancy_helpers import response_summary
 from worker_tenant_fixtures import wait_for_only_accessible_subscription
 
 from test_helper import (
@@ -2067,27 +2068,36 @@ class TestE2ESubscriptionFlow:
             )
             assert r_models.status_code == 200, (
                 f"Central /v1/models with a single-subscription key returned "
-                f"{r_models.status_code}: {r_models.text[:500]}"
+                f"{r_models.status_code}: {response_summary(r_models, max_body=200)}"
             )
             catalog = r_models.json()
-            assert catalog.get("object") == "list", catalog
-            assert "data" in catalog, f"Response missing 'data' field: {catalog}"
+            assert catalog.get("object") == "list", (
+                f"Unexpected catalog object={catalog.get('object')!r}; "
+                f"keys={sorted(catalog)}"
+            )
+            assert "data" in catalog, (
+                f"Response missing 'data' field; keys={sorted(catalog)}"
+            )
             assert isinstance(catalog["data"], list), (
-                f"'data' must be an array, got {type(catalog['data']).__name__}: "
-                f"{catalog['data']!r}"
+                f"'data' must be an array, got {type(catalog['data']).__name__}"
             )
             # Gateway-only mode may legitimately return an empty list for a valid
             # single-subscription key; only assert per-model shape when present.
             for model in catalog["data"]:
                 for field in ("id", "object", "created", "owned_by"):
-                    assert field in model, f"Model missing {field!r}: {model}"
+                    assert field in model, (
+                        f"Model missing {field!r}; keys={sorted(model)}"
+                    )
                 subs = model.get("subscriptions")
-                assert isinstance(subs, list), f"subscriptions should be a list: {model}"
+                assert isinstance(subs, list), (
+                    f"subscriptions should be a list; model keys={sorted(model)}"
+                )
                 assert len(subs) == 1, (
-                    f"Expected 1 auto-selected subscription, got {subs!r}"
+                    f"Expected 1 auto-selected subscription, got {len(subs)} entries"
                 )
                 assert subs[0]["name"] == subscription_name, (
-                    f"Expected subscription {subscription_name!r}, got {subs[0]['name']!r}"
+                    "Auto-selected subscription name did not match the expected "
+                    "subscription"
                 )
 
         finally:

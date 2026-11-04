@@ -482,15 +482,9 @@ print(f"azp={authorized_party}, audience={token_audience!r}, organizations={len(
     # Full suite by default (nightly / local / unmarked callers). /group-test opts
     # into the low-churn subset via Tekton: E2E_SMOKE_ONLY=true.
     export E2E_SMOKE_ONLY="${E2E_SMOKE_ONLY:-false}"
-    # Serial pass 2b runs on one worker. Lanes are implemented and measurable
-    # (`E2E_SERIAL_WORKERS=2` took 2b from ~17.9 min to 11.5 min) but are NOT
-    # safe yet: grouping is per file, while several pass-2b files read the
-    # stored auth state of the same models. Measured at 3 lanes:
-    # test_models_endpoint::test_empty_model_list failed because a concurrent
-    # test in test_subscription had created a MaaSAuthPolicy on the
-    # UNCONFIGURED model, which made that model appear in the tenant's
-    # /v1/models. Turning lanes on needs a shared-model dependency audit first
-    # (see the PR description), not just more groups.
+    # Serial pass 2b must remain on one worker until shared-model isolation is
+    # complete. Grouping is per file, while several pass-2b files read the
+    # stored auth state of the same models.
     export E2E_SERIAL_WORKERS="${E2E_SERIAL_WORKERS:-1}"
     # Run the whole parallel pass even when some tests fail. The cluster's
     # control plane (kuadrant-operator, maas-controller) is shared by all

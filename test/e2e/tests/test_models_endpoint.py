@@ -30,7 +30,7 @@ from governance_scenarios import (
     assert_two_subscription_isolation,
     wait_for_catalog_denied,
 )
-from multitenancy_helpers import wait_for_llmisvc_backend_ready
+from multitenancy_helpers import response_summary, wait_for_llmisvc_backend_ready
 from test_helper import (
     DISTINCT_MODEL_2_ID,
     DISTINCT_MODEL_2_REF,
@@ -2223,7 +2223,10 @@ class TestModelsEndpoint:
                 api_key,
                 subscription_name,
             )
-            log.info("Central discovery baseline: %s", baseline_models)
+            log.info(
+                "Central discovery baseline contains %d model(s)",
+                len(baseline_models),
+            )
 
             success_count = 0
             rate_limited = False
@@ -2243,7 +2246,7 @@ class TestModelsEndpoint:
                 else:
                     raise AssertionError(
                         f"Unexpected inference status {response.status_code}: "
-                        f"{response.text[:500]}"
+                        f"{response_summary(response, max_body=200)}"
                     )
 
             assert rate_limited, (
@@ -2253,25 +2256,42 @@ class TestModelsEndpoint:
             blocked = _inference(api_key, path=model_path, max_tokens=1)
             assert blocked.status_code == 429, (
                 f"Expected inference to remain rate limited, got {blocked.status_code}: "
-                f"{blocked.text[:500]}"
+                f"{response_summary(blocked, max_body=200)}"
             )
 
             models_data, matching_models = _wait_for_central_models_in_subscription(
                 api_key,
                 subscription_name,
             )
-            assert isinstance(models_data.get("data"), list), models_data
+            assert isinstance(models_data.get("data"), list), (
+                f"Central models response has invalid shape; "
+                f"keys={sorted(models_data)}"
+            )
             assert matching_models, (
                 f"Central /v1/models lost subscription {subscription_name} "
                 "after quota exhaustion"
             )
 
-            # Catalog polling can span the quota window; confirm inference is still
-            # blocked before asserting the per-model discovery exemption.
-            still_blocked = _inference(api_key, path=model_path, max_tokens=1)
-            assert still_blocked.status_code == 429, (
-                f"Expected inference to remain rate limited before per-model check, "
-                f"got {still_blocked.status_code}: {still_blocked.text[:500]}"
+            # Catalog polling can span the quota window. Re-exhaust the quota
+            # immediately before the per-model check so the assertion does not
+            # depend on when the one-minute window happens to roll over.
+            recheck_deadline = time.time() + RATE_LIMIT_ENFORCEMENT_TIMEOUT
+            still_blocked = None
+            while time.time() < recheck_deadline:
+                response = _inference(api_key, path=model_path, max_tokens=1)
+                if response.status_code == 429:
+                    still_blocked = response
+                    break
+                if response.status_code != 200:
+                    raise AssertionError(
+                        "Unexpected inference status while re-exhausting quota: "
+                        f"{response.status_code}: "
+                        f"{response_summary(response, max_body=200)}"
+                    )
+
+            assert still_blocked is not None, (
+                "Expected inference to become rate limited again before the "
+                "per-model discovery check"
             )
 
             # The per-model discovery path must stay exempt too. Covered here so
@@ -2283,18 +2303,20 @@ class TestModelsEndpoint:
             )
             assert per_model.status_code == 200, (
                 f"Expected 200 for {model_path}/v1/models after quota exhaustion, "
-                f"got {per_model.status_code}: {per_model.text[:500]}"
+                f"got {per_model.status_code}: "
+                f"{response_summary(per_model, max_body=200)}"
             )
             try:
                 per_model_data = per_model.json()
             except (json.JSONDecodeError, ValueError):
                 log.info(
                     "Per-model /v1/models accessible (200), non-JSON body: %s",
-                    per_model.text[:200],
+                    response_summary(per_model, max_body=200),
                 )
             else:
                 assert "data" in per_model_data or "object" in per_model_data, (
-                    f"Expected valid models response, got: {per_model_data}"
+                    "Expected valid models response; "
+                    f"keys={sorted(per_model_data)}"
                 )
         finally:
             _delete_cr("maassubscription", subscription_name)
